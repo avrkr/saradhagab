@@ -13,16 +13,27 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // Add timeout settings to fail faster
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
-// Verify connection configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email Service Error:", error);
-  } else {
-    console.log("Email Service is ready");
-  }
-});
+// Verify connection configuration (non-blocking)
+// This won't crash the app if email service is unavailable
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("⚠️  Email Service Error:", error.message);
+      console.log("📧 Email functionality will be disabled. OTPs will be logged to console.");
+    } else {
+      console.log("✅ Email Service is ready");
+    }
+  });
+} else {
+  console.warn("⚠️  SMTP credentials not configured. Email functionality disabled.");
+  console.log("📧 OTPs will be logged to console instead.");
+}
 
 const sendEmail = async (to, subject, html) => {
   try {
