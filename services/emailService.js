@@ -3,40 +3,45 @@ const {
   otpTemplate,
   passwordResetTemplate,
   notificationTemplate,
-} = require("../utils/emailTemplates"); // Ensure the path is correct
+} = require("../utils/emailTemplates");
 
-// 1. Create the Transporter
-// The 'secure' flag is important. Use port 465 with secure: true, or port 587 with secure: false.
+// -------------------------------------------
+// 1. Create Transporter (Dynamic & Correct)
+// -------------------------------------------
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: 587,
-  secure: false, // 587 always uses STARTTLS, so secure must be false
+  port: Number(process.env.SMTP_PORT),
+  secure: Number(process.env.SMTP_PORT) === 465, // 465 = SSL, others = STARTTLS
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  tls: {
-    rejectUnauthorized: true,   // validate server certificate
-    minVersion: "TLSv1.2",      // enforce modern TLS
-  }
 });
 
+// Optional: If strict TLS is required by provider, uncomment this
+// tls: {
+//   rejectUnauthorized: true,
+//   minVersion: "TLSv1.2",
+// }
 
-// 2. Verify connection
+// -------------------------------------------
+// 2. Verify Transporter
+// -------------------------------------------
 transporter.verify((error, success) => {
   if (error) {
-    // This logs the ETIMEDOUT error you saw
-    console.error("Email Service Error:", error); 
+    console.error("Email Service Error:", error);
   } else {
     console.log("Email Service is ready and connected.");
   }
 });
 
+// -------------------------------------------
 // 3. Core Email Sending Function
+// -------------------------------------------
 const sendEmail = async (to, subject, html) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
       to,
       subject,
       html,
@@ -50,8 +55,11 @@ const sendEmail = async (to, subject, html) => {
   }
 };
 
+// -------------------------------------------
 // 4. Specific Email Functions
-// OTP EMAIL (includes your fallback logic)
+// -------------------------------------------
+
+// OTP EMAIL
 const sendOtpEmail = async (to, otp) => {
   const html = otpTemplate(otp);
   try {
@@ -64,7 +72,7 @@ const sendOtpEmail = async (to, otp) => {
   }
 };
 
-// PASSWORD RESET EMAIL (includes your fallback logic)
+// PASSWORD RESET EMAIL
 const sendPasswordResetEmail = async (to, otp) => {
   const html = passwordResetTemplate(otp);
   try {
@@ -78,7 +86,13 @@ const sendPasswordResetEmail = async (to, otp) => {
 };
 
 // NOTIFICATION EMAIL
-const sendNotificationEmail = async (to, title, message, actionLink, actionText) => {
+const sendNotificationEmail = async (
+  to,
+  title,
+  message,
+  actionLink,
+  actionText
+) => {
   const html = notificationTemplate(title, message, actionLink, actionText);
   await sendEmail(to, title, html);
 };
