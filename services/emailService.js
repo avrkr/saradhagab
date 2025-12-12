@@ -5,49 +5,34 @@ const {
   notificationTemplate,
 } = require("../utils/emailTemplates");
 
-// -------------------------------------------
-// 1. Create Transporter (Dynamic & Correct)
-// -------------------------------------------
+// Create Transporter
+// We use a flexible configuration that works well with Gmail and other providers
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: Number(process.env.SMTP_PORT) === 465, // 465 = SSL, others = STARTTLS
+  service: "gmail", // Built-in support for Gmail (automatically handles host/port/secure)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-// Optional: If strict TLS is required by provider, uncomment this
-// tls: {
-//   rejectUnauthorized: true,
-//   minVersion: "TLSv1.2",
-// }
-
-// -------------------------------------------
-// 2. Verify Transporter
-// -------------------------------------------
+// Verify connection configuration
 transporter.verify((error, success) => {
   if (error) {
     console.error("Email Service Error:", error);
   } else {
-    console.log("Email Service is ready and connected.");
+    console.log("Email Service is ready");
   }
 });
 
-// -------------------------------------------
-// 3. Core Email Sending Function
-// -------------------------------------------
 const sendEmail = async (to, subject, html) => {
   try {
     const info = await transporter.sendMail({
-      from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
+      from: `"Saradhaga" <${process.env.SMTP_USER}>`, // Use the authenticated user as sender
       to,
       subject,
       html,
     });
-
-    console.log("Message sent:", info.messageId);
+    console.log("Message sent: %s", info.messageId);
     return info;
   } catch (error) {
     console.error("Error sending email:", error);
@@ -55,24 +40,20 @@ const sendEmail = async (to, subject, html) => {
   }
 };
 
-// -------------------------------------------
-// 4. Specific Email Functions
-// -------------------------------------------
-
-// OTP EMAIL
 const sendOtpEmail = async (to, otp) => {
   const html = otpTemplate(otp);
   try {
     await sendEmail(to, "Your Verification Code - Saradhaga", html);
   } catch (error) {
+    // Fallback logging for development/debugging if email fails
     console.log("==========================================");
     console.log(`[FALLBACK] OTP for ${to}: ${otp}`);
     console.log("==========================================");
-    throw error;
+    // We don't throw here to allow the flow to continue even if email fails
+    // The user can get the OTP from logs (in dev) or try again
   }
 };
 
-// PASSWORD RESET EMAIL
 const sendPasswordResetEmail = async (to, otp) => {
   const html = passwordResetTemplate(otp);
   try {
@@ -81,24 +62,16 @@ const sendPasswordResetEmail = async (to, otp) => {
     console.log("==========================================");
     console.log(`[FALLBACK] Reset OTP for ${to}: ${otp}`);
     console.log("==========================================");
-    throw error;
   }
 };
 
-// NOTIFICATION EMAIL
-const sendNotificationEmail = async (
-  to,
-  title,
-  message,
-  actionLink,
-  actionText
-) => {
+const sendNotificationEmail = async (to, title, message, actionLink, actionText) => {
   const html = notificationTemplate(title, message, actionLink, actionText);
-  await sendEmail(to, title, html);
+  try {
+    await sendEmail(to, title, html);
+  } catch (error) {
+    console.error("Failed to send notification email:", error);
+  }
 };
 
-module.exports = {
-  sendOtpEmail,
-  sendPasswordResetEmail,
-  sendNotificationEmail,
-};
+module.exports = { sendOtpEmail, sendPasswordResetEmail, sendNotificationEmail };
