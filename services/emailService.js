@@ -3,26 +3,31 @@ const {
   otpTemplate,
   passwordResetTemplate,
   notificationTemplate,
-} = require("../utils/emailTemplates");
+} = require("../utils/emailTemplates"); // Ensure the path is correct
 
+// 1. Create the Transporter
+// The 'secure' flag is important. Use port 465 with secure: true, or port 587 with secure: false.
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_PORT === "465", // Use SSL/TLS if port is 465
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-// Verify connection
+// 2. Verify connection
 transporter.verify((error, success) => {
   if (error) {
-    console.error("Email Service Error:", error);
+    // This logs the ETIMEDOUT error you saw
+    console.error("Email Service Error:", error); 
   } else {
-    console.log("Email Service is ready");
+    console.log("Email Service is ready and connected.");
   }
 });
 
+// 3. Core Email Sending Function
 const sendEmail = async (to, subject, html) => {
   try {
     const info = await transporter.sendMail({
@@ -40,7 +45,8 @@ const sendEmail = async (to, subject, html) => {
   }
 };
 
-// OTP EMAIL
+// 4. Specific Email Functions
+// OTP EMAIL (includes your fallback logic)
 const sendOtpEmail = async (to, otp) => {
   const html = otpTemplate(otp);
   try {
@@ -53,7 +59,7 @@ const sendOtpEmail = async (to, otp) => {
   }
 };
 
-// PASSWORD RESET EMAIL
+// PASSWORD RESET EMAIL (includes your fallback logic)
 const sendPasswordResetEmail = async (to, otp) => {
   const html = passwordResetTemplate(otp);
   try {
