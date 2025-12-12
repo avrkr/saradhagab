@@ -9,13 +9,18 @@ const {
 // The 'secure' flag is important. Use port 465 with secure: true, or port 587 with secure: false.
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT === "465", // Use SSL/TLS if port is 465
+  port: 587,
+  secure: false, // 587 always uses STARTTLS, so secure must be false
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: true,   // validate server certificate
+    minVersion: "TLSv1.2",      // enforce modern TLS
+  }
 });
+
 
 // 2. Verify connection
 transporter.verify((error, success) => {
