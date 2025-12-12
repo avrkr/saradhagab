@@ -12,6 +12,7 @@ const roomRoutes = require('./routes/roomRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Railway/Vercel load balancer)
 const server = http.createServer(app);
 
 // Middleware
