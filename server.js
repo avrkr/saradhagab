@@ -34,6 +34,11 @@ app.use('/api/user', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
 
+
+app.get('/', (req, res) => {
+  res.send('Saradhaga Backend is running');
+}); 
+
 // Socket.IO Setup
 const io = new Server(server, {
   cors: {
