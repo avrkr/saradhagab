@@ -40,7 +40,9 @@ exports.signup = async (req, res) => {
     }
 
     const otp = await createOtp(email, 'signup');
-    await sendOtpEmail(email, otp);
+    
+    // Send email asynchronously to prevent timeout
+    sendOtpEmail(email, otp).catch(err => console.error('Error sending signup OTP:', err));
 
     res.json({ message: 'OTP sent to email' });
   } catch (error) {
